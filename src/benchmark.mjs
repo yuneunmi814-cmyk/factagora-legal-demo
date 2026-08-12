@@ -183,7 +183,15 @@ console.log("  → 소스를 못 찾으면 유보하지만, 사건번호 '형식
 console.log("     그것을 개별 사건 존재의 근거로 오인하는 경향(class→instance 치환).");
 console.log("═".repeat(74));
 
-const outPath = new URL("../data/benchmark-result.json", import.meta.url);
+// 실행마다 별도 파일로 남긴다 — 덮어쓰면 재현성(같은 질문에 같은 답이 오는지) 비교가 불가능해진다.
+const ranAt = new Date().toISOString();
+const stamp = ranAt.replace(/[:.]/g, "-").slice(0, 19);
+const payload = JSON.stringify({ ranAt, rows, summary: { faOk, localOk, total: rows.length, avgMs } }, null, 2);
 const { writeFileSync } = await import("node:fs");
-writeFileSync(outPath, JSON.stringify({ ranAt: new Date().toISOString(), rows, summary: { faOk, localOk, total: rows.length, avgMs } }, null, 2));
-console.log(`상세 결과 저장: ${outPath.pathname}`);
+const archived = new URL(`../data/runs/benchmark-${stamp}.json`, import.meta.url);
+const { mkdirSync } = await import("node:fs");
+mkdirSync(new URL("../data/runs/", import.meta.url), { recursive: true });
+writeFileSync(archived, payload);
+writeFileSync(new URL("../data/benchmark-result.json", import.meta.url), payload); // 최신본 별칭
+console.log(`상세 결과 저장: ${archived.pathname}`);
+console.log(`(최신본 별칭: data/benchmark-result.json)`);
